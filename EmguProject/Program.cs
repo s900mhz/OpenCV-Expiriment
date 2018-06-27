@@ -115,7 +115,51 @@ namespace EmguProject
 
             rawFrame.CopyTo(finalFrame);
             DetectObject(denoisedDiffFrame, finalFrame);
+
         }
-        
+
+        //The method takes binary difference image (detectionFrame) on which 
+        //contours will be detected and another Mat instance (displayFrame)
+        //on which detected object will be marked (it's a copy of unprocessed frame)...
+        private static void DetectObject(Mat detectionFrame, Mat displayFrame)
+        {
+            //We can use VectoreOfVectorPoint to store many contours aka vectors
+            using(VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint())
+            {
+                //Build list of contours
+                //Takes the image and runs contour detection algorithm to find boundaries between black (zero) and white (non-zero) pixels on 8-bit single channel 
+                //image - our Mat instance with the result of AbsDiff->CvtColor->Threshold->Erode->Dilate
+                CvInvoke.FindContours(detectionFrame, contours, null, RetrType.List, ChainApproxMethod.ChainApproxSimple);
+
+                //Selecting largest contour
+                if (contours.Size > 0)
+                {
+                    double maxArena = 0;
+                    int chosen = 0;
+                    for (int i = 0; i < contours.Size; i++)
+                    {
+                        VectorOfPoint contour = contours[i];
+
+                        double area = CvInvoke.ContourArea(contour);
+                        if(area > maxArena)
+                        {
+                            maxArena = area;
+                            chosen = i;
+                        }
+                    }
+                    //Draw on a frame
+                    MarkDetectedObject(displayFrame, contours[chosen], maxArena);
+                }
+
+            }
+
+        }
+
+        private static void MarkDetectedObject(Mat frame, VectorOfPoint contour, double area)
+        {
+            //Getting minimal rectangle which contains the contour
+            Rectangle box = CvInvoke.BoundingRectangle(contour);
+        }
+
     }
 }
